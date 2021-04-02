@@ -1,0 +1,44 @@
+body {
+  background-color: lightgray;
+}
+
+h1 {
+  color: #043c57;
+  font-size: 150%;
+}
+
+h2 {
+  color: #369;
+  font-weight: lighter;
+  font-size: 120%;
+}
+
+.split {
+  position: fixed;
+  z-index: 1;
+  top: 6em;
+  overflow-x: hidden;
+  padding-top: 20x;
+}
+
+.left {
+  left: 0;
+  width: 200px;
+}
+
+.right {
+  right: 0;
+  width: calc(100% - 200px);
+}
+
+/* right*/
+.registers {
+  margin: 0 10px;
+}
+
+button.btn {
+  background-color: #1d1f21;
+  color: #e0e0e0;
+  border: none;
+  padding: 2px 6px;
+}
