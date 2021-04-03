@@ -5,17 +5,21 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Birdbones Mapper</title>
         <link href="mapper.css" rel="stylesheet">
-        <script src="jquery.js"></script>
+        <link rel="shortcut icon" href="favicon.gif" type="image/x-icon">
     </head>
     <body>
         <h1>The Birdbones Mapper</h1>
         <h2>Mapping utility for the Birdbones game engine</h2>
         <div class="split left">
-            <button class="btn" onclick="addLocation(2, 2);">Add Location</button>
+            <button class="btn" onclick="action = addLocation;">add vertex</button></br>
+            <button class="btn">create triangle</button></br>
+            <label for="upload-map" class="btn img-btn">select image</label>
+            <input id="upload-map" type="file" accept="image/*" onchange="setImage();"><br>
+            <button class="btn">export</button>
         </div>
         <div class="split right">
             <div class="registers">
-                <p>Locations: <span id="locations"></span><p>
+                <canvas id="bbmap" width="640" height="400"></canvas>
             </div>
         </div>
         <script src="mapper.js"></script>

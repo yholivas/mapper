@@ -16,13 +16,13 @@ h2 {
 .split {
   position: fixed;
   z-index: 1;
-  top: 6em;
+  top: 8em;
   overflow-x: hidden;
   padding-top: 20x;
 }
 
 .left {
-  left: 0;
+  left: 1em;
   width: 200px;
 }
 
@@ -36,9 +36,24 @@ h2 {
   margin: 0 10px;
 }
 
-button.btn {
+.btn {
   background-color: #1d1f21;
   color: #e0e0e0;
   border: none;
   padding: 2px 6px;
+  margin-bottom: 1em;
 }
+
+.img-btn {
+  margin-top: 270px;
+  display:inline-block;
+}
+
+canvas {
+  border: 1px solid black;
+}
+
+input[type="file"] {
+    display: none;
+}
+
