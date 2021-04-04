@@ -1,12 +1,17 @@
-const loc = {x: 0, y: 0};
-var locations = [loc];
+class Location {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+    }
+}
 
-var action;
+var locations = new Array();
+
 var reader = new FileReader();
 
 reader.onload = function(e) {
     let ctx = document.getElementById('bbmap').getContext('2d');
-    ctx.mozImageSmoothingEnabled = false;
+    ctx.imageSmoothingEnabled = false;
     let img = new Image();
     img.src = e.target.result;
     img.onload = function() {
@@ -14,16 +19,25 @@ reader.onload = function(e) {
     };
 };
 
-function addLocation(x, y) {
-    let loc = {x: x, y: y};
+function getOffsetLoc(e) { return new Location(e.offsetX - 1, e.offsetY - 3); }
+
+function addLocation(e) {
+    let loc = getOffsetLoc(e);
     locations.push(loc);
-    let printedList = "";
-    locations.forEach(
-        function(item, index, array) {
-            printedList += item.x.toString() + item.y.toString()
+
+    let ctx = document.getElementById('bbmap').getContext('2d');
+    ctx.fillRect(loc.x - 3, loc.y, 4, 4);
+}
+
+function removeLocation(e) {
+    let loc = getOffsetLoc(e);
+    locations.forEach(function(itm, idx, arr) {
+        if (loc.x == itm.x && loc.y == itm.y) {
+            let ctx = document.getElementById('bbmap').getContext('2d');
+            locations.splice(idx, 1);
+            ctx.clearRect(loc.x - 3, loc.y, 4, 4);
         }
-    );
-    document.getElementById("locations").textContent = printedList;
+    });
 }
 
 function readImage(input) {
@@ -32,6 +46,20 @@ function readImage(input) {
     }
 }
 
-function setImage() {
-    readImage(document.querySelector('input[type="file"]'));
+function setImage() { readImage(document.querySelector('input[type="file"]')); }
+
+function selectButton(btn) {
+    if (document.getElementById('selected-btn'))
+        document.getElementById('selected-btn').id = null;
+    btn.id = 'selected-btn';
+}
+
+function setAddVertex(e) {
+    selectButton(e.target);
+    document.getElementById('bbmap').onclick = addLocation;
+}
+
+function setRemoveVertex(e) {
+    selectButton(e.target);
+    document.getElementById('bbmap').onclick = removeLocation;
 }

@@ -11,7 +11,8 @@
         <h1>The Birdbones Mapper</h1>
         <h2>Mapping utility for the Birdbones game engine</h2>
         <div class="split left">
-            <button class="btn" onclick="action = addLocation;">add vertex</button></br>
+            <button class="btn" onclick="setAddVertex(event)">add vertex</button></br>
+            <button class="btn" onclick="setRemoveVertex(event)">remove vertex</button></br>
             <button class="btn">create triangle</button></br>
             <label for="upload-map" class="btn img-btn">select image</label>
             <input id="upload-map" type="file" accept="image/*" onchange="setImage();"><br>
