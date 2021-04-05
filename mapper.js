@@ -13,23 +13,30 @@ class TriMesh {
 class Graph {
     nodes = new Map();
     meshes = new Array();
-    addVertex(vtx, nbor) {
+
+    addLoc(loc, nbor) {
         // if vertex is already in the map, access it and add neighbor to its neighbors
-        if (this.nodes.has(vtx)) {
-            let nbors = this.nodes.get(vtx).slice();
+        if (this.nodes.has(loc)) {
+            let nbors = this.nodes.get(loc).slice();
             let nborInNbors = false;
             nbors.forEach(function(itm) {
                 nborInNbors = nborInNbors || (itm == nbor);
             });
             if (!nborInNbors) {
                 nbors.push(nbor);
-                this.nodes.set(vtx, nbors);
+                this.nodes.set(loc, nbors);
             }
         } else {
             // else add vertex to map and create new array with neighbor
-            this.nodes.set(vtx, Array.from([nbor]));
+            this.nodes.set(loc, Array.from([nbor]));
         }
     }
+
+    addVertex(vtx, nbor) {
+        this.addLoc(vtx, nbor);
+        this.addLoc(nbor, vtx);
+    }
+
 }
 
 var graph = new Graph();
@@ -45,6 +52,7 @@ reader.onload = function(e) {
     img.src = e.target.result;
     img.onload = function() {
         ctx.drawImage(img, 0, 0, 640, 400);
+        ctx.fillStyle = 'red';
     };
 };
 
@@ -81,9 +89,9 @@ function removeLocation(e) {
 function addLocToMesh(loc) {
     tempMesh.vertices.push(loc);
     let ctx = document.getElementById('bbmap').getContext('2d');
-    ctx.fillStyle = `rgb(85,85,170)`;
+    ctx.fillStyle = 'lime';
     ctx.fillRect(loc.x - 3, loc.y, 4, 4);
-    ctx.fillStyle = 'black';
+    ctx.fillStyle = 'red';
 }
 
 function constructTriMesh(e) {
@@ -96,9 +104,8 @@ function constructTriMesh(e) {
             graph.addVertex(tempMesh.vertices[0], loc);
         } else if (tempMesh.vertices.length == 3) {
             // add new vertex to mesh, connect vertices in mesh to new vertex, save mesh in map, create new temp mesh
-            tempMesh.vertices.forEach(function(itm) {
-                graph.addVertex(itm, loc);
-            });
+            graph.addVertex(tempMesh.vertices[0], loc);
+            graph.addVertex(tempMesh.vertices[1], loc);
             graph.meshes.push(tempMesh);
             tempMesh = new TriMesh();
         }
