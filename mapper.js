@@ -140,6 +140,12 @@ function readImage(input) {
 
 function setImage() { readImage(document.querySelector('input[type="file"]')); }
 
+function drawDots(arr) {
+    arr.forEach(function(itm) {
+        ctx.fillRect(itm.x - 3, itm.y, 4, 4);
+    });
+}
+
 function updateCanvas(e) {
     canvasFunc(e);
     // clear everything
@@ -148,9 +154,7 @@ function updateCanvas(e) {
     if (img) ctx.drawImage(img, 0, 0, 640, 400);
     // draw locations array
     ctx.fillStyle = 'red';
-    locations.forEach(function(itm) {
-        ctx.fillRect(itm.x - 3, itm.y, 4, 4);
-    });
+    drawDots(locations);
     // draw meshes
     ctx.fillStyle = "rgba(0, 255, 0, 0.5)";
     graph.meshes.forEach(function(itm) {
@@ -165,9 +169,7 @@ function updateCanvas(e) {
     });
     // probably draw any locations in tempmesh as green
     ctx.fillStyle = 'lime';
-    tempMesh.vertices.forEach(function(itm) {
-        ctx.fillRect(itm.x - 3, itm.y, 4, 4);
-    });
+    drawDots(tempMesh.vertices);
 }
 
 function selectButton(btn) {
@@ -194,4 +196,13 @@ function setCreateTriangle(e) {
 function setDestroyTriangle(e) {
     selectButton(e.target);
     canvasFunc = destroyTriMesh;
+}
+
+function exportData() {
+    var dataString = new String();
+    locations.forEach(function(itm, idx) {
+        dataString += "Location loc" + idx.toString() + " = {";
+        dataString += itm.x.toString() + ", " + itm.y.toString() + "};\n";
+    });
+    window.open(URL.createObjectURL(new Blob([dataString], {type : 'text/plain'})));
 }
