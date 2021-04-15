@@ -3,11 +3,27 @@ class Location {
         this.x = x;
         this.y = y;
     }
+
+    toString() {
+        return '{' + this.x.toString() + ', ' + this.y.toString() + '}';
+    }
 }
 
 class TriMesh {
     vertices = new Array();
     midpoints = new Array();
+
+    toString() {
+        let str = new String();
+        if (this.vertices[0]) str += '{{' + this.vertices[0].toString();
+        this.vertices.forEach(function(itm, idx) {
+            if (idx > 0) str += ', ' + itm.toString();
+        });
+        str += '}, {';
+        // midpoints go here:
+        str += '}}\n';
+        return str;
+    }
 }
 
 class Graph {
@@ -37,6 +53,29 @@ class Graph {
         this.addLoc(nbor, vtx);
     }
 
+    removeNeighbor(loc, nbor) {
+        if (this.nodes.has(loc)) {
+            let idx = this.nodes.get(loc).indexOf(nbor);
+            if (idx != -1) {
+                let nbors = this.nodes.get(loc).slice();
+                nbors.splice(idx, 1);
+                if (nbors.length == 0) {
+                    this.nodes.delete(loc);
+                } else {
+                    this.nodes.set(loc, nbors);
+                }
+            }
+        }
+    }
+
+    removeMeshNeighbors(mesh) {
+        this.removeNeighbor(mesh.vertices[0], mesh.vertices[1]);
+        this.removeNeighbor(mesh.vertices[0], mesh.vertices[2]);
+        this.removeNeighbor(mesh.vertices[1], mesh.vertices[0]);
+        this.removeNeighbor(mesh.vertices[1], mesh.vertices[2]);
+        this.removeNeighbor(mesh.vertices[2], mesh.vertices[0]);
+        this.removeNeighbor(mesh.vertices[2], mesh.vertices[1]);
+    }
 }
 
 var graph = new Graph();
@@ -82,10 +121,24 @@ function removeLocation(e) {
     }
 }
 
+function checkTempMesh(loc) {
+    let alreadyPresent = false;
+    if (tempMesh.vertices[0]) {
+        let loc1 = tempMesh.vertices[0];
+        alreadyPresent = alreadyPresent || (loc.x == loc1.x && loc.y == loc1.y);
+    }
+    if (tempMesh.vertices[1]) {
+        let loc2 = tempMesh.vertices[1];
+        alreadyPresent = alreadyPresent || (loc.x == loc2.x && loc.y == loc2.y);
+    }
+    return alreadyPresent;
+}
+
 function constructTriMesh(e) {
     let idx = selectLocation(getOffsetLoc(e));
     if (idx != -1) {
         var loc = locations[idx];
+        if (checkTempMesh(loc)) return;
         tempMesh.vertices.push(loc);
         if (tempMesh.vertices.length == 2) {
             // add new vertex to mesh, connect vertex in mesh to new vertex as neighbor
@@ -124,8 +177,10 @@ function destroyTriMesh(e) {
     let loc = getOffsetLoc(e);
     // see if click is inside triangle
     // if it is, delete that mesh
+    // TODO: have to destroy mesh from graph node map
     graph.meshes.forEach(function(itm, idx) {
         if (contains_point(itm, loc)) {
+            graph.removeMeshNeighbors(itm);
             graph.meshes.splice(idx, 1);
             return;
         }
@@ -198,11 +253,29 @@ function setDestroyTriangle(e) {
     canvasFunc = destroyTriMesh;
 }
 
+// exporting graph data:
+// straightforward approach for now - only export Graph struct, save it all as literals
+// don't really need references to individual locations
+// later: figure out logic for how midpoints will be generated
 function exportData() {
     var dataString = new String();
-    locations.forEach(function(itm, idx) {
-        dataString += "Location loc" + idx.toString() + " = {";
-        dataString += itm.x.toString() + ", " + itm.y.toString() + "};\n";
+    dataString += '#include "graph.h"\n\n';
+    dataString += 'Graph myGraph {{\n';
+    // location unordered map
+    graph.nodes.forEach(function(nbors, node) {
+        dataString += '{' + node.toString() + ', {';
+        if(nbors[0]) dataString += nbors[0].toString();
+        nbors.forEach(function(itm, idx) {
+            if (idx > 0) dataString += ', ' + itm.toString();
+        });
+        dataString += '}},\n';
     });
+    dataString += '}, {\n';
+    // graph mesh array
+    if (graph.meshes[0]) dataString += graph.meshes[0].toString();
+    graph.meshes.forEach(function(itm, idx) {
+        if (idx > 0) dataString += ', ' + itm.toString();
+    });
+    dataString += '}};'
     window.open(URL.createObjectURL(new Blob([dataString], {type : 'text/plain'})));
 }
