@@ -13,22 +13,40 @@ class TriMesh {
     vertices = new Array();
     midpoints = new Array();
 
+    midpointFrom(loc1, loc2) {
+        return new Location((loc1.x + loc2.x) / 2, (loc1.y + loc2.y) / 2);
+    }
+
+    genMidpoints() {
+        // create array of midpoints
+        let midpoints = new Array();
+        midpoints.push(this.midpointFrom(this.vertices[0], this.vertices[1]));
+        midpoints.push(this.midpointFrom(this.vertices[1], this.vertices[2]));
+        midpoints.push(this.midpointFrom(this.vertices[0], this.vertices[2]));
+        return midpoints;
+    }
+
     toString() {
         let str = new String();
-        if (this.vertices[0]) str += '{{' + this.vertices[0].toString();
-        this.vertices.forEach(function(itm, idx) {
-            if (idx > 0) str += ', ' + itm.toString();
-        });
-        str += '}, {';
-        // midpoints go here:
-        str += '}}\n';
+        str += '{';
+        str += arrCString(this.vertices);
+        str += ', {';
+        str += arrCString(this.midpoints);
+        str += '}\n';
         return str;
     }
 }
 
 class Graph {
-    nodes = new Map();
+    nodes = new LocationMap();
     meshes = new Array();
+
+    clone() {
+        var cpy = new Graph();
+        cpy.nodes = this.nodes.clone();
+        cpy.meshes = this.meshes.slice();
+        return cpy;
+    }
 
     addLoc(loc, nbor) {
         // if vertex is already in the map, access it and add neighbor to its neighbors
@@ -36,7 +54,7 @@ class Graph {
             let nbors = this.nodes.get(loc).slice();
             let nborInNbors = false;
             nbors.forEach(function(itm) {
-                nborInNbors = nborInNbors || (itm == nbor);
+                nborInNbors = nborInNbors || locsMatch(itm, nbor);
             });
             if (!nborInNbors) {
                 nbors.push(nbor);
@@ -49,6 +67,8 @@ class Graph {
     }
 
     addVertex(vtx, nbor) {
+        // kludge that I might have to resolve later:
+        if (locsMatch(vtx, nbor)) return;
         this.addLoc(vtx, nbor);
         this.addLoc(nbor, vtx);
     }
@@ -76,6 +96,72 @@ class Graph {
         this.removeNeighbor(mesh.vertices[2], mesh.vertices[0]);
         this.removeNeighbor(mesh.vertices[2], mesh.vertices[1]);
     }
+
+    genMidpoints() {
+        // generate all possible midpoints -> store in hash map
+        let midpointMap = new LocationMap();
+        this.meshes.forEach(function(mesh) {
+            let midpoints = mesh.genMidpoints();
+            midpoints.forEach(function(point) {
+                if (midpointMap.has(point)) {
+                    midpointMap.set(point, midpointMap.get(point) + 1);
+                } else {
+                    midpointMap.set(point, 1);
+                }
+            });
+        });
+        // go through meshes -> store only midpoints that show up more than once
+        for (const mesh of this.meshes) {
+            let midpoints = mesh.genMidpoints();
+            for (const point of midpoints) {
+                if (midpointMap.get(point) > 1) {
+                    // connect midpoints to mesh nodes
+                    for (const itm of mesh.midpoints) {this.addVertex(point, itm);}
+                    mesh.midpoints.push(point);
+                    this.addVertex(point, mesh.vertices[0]);
+                    this.addVertex(point, mesh.vertices[1]);
+                    this.addVertex(point, mesh.vertices[2]);
+                }
+            }
+        }
+    }
+}
+
+class LocationMap {
+    locPairs = new Array();
+
+    clone() {
+        var cpy = new LocationMap();
+        cpy.locPairs = this.locPairs.slice();
+        return cpy;
+    }
+
+    has(point) {
+        var cond = false;
+        this.locPairs.forEach(function(pair) {
+            if (locsMatch(pair[0], point)) cond = true;
+        });
+        return cond;
+    }
+
+    get(point) {
+        var val = undefined;
+        this.locPairs.forEach(function(pair) {
+            if (locsMatch(pair[0], point)) val = pair[1];
+        });
+        return val;
+    }
+
+    set(point, val) {
+        for (const pair of this.locPairs) {
+            if (locsMatch(pair[0], point)) {
+                let newPair = [point, val];
+                this.locPairs[this.locPairs.indexOf(pair)] = newPair;
+                return
+            }
+        }
+        this.locPairs.push([point, val]);
+    }
 }
 
 var graph = new Graph();
@@ -97,6 +183,8 @@ reader.onload = function(e) {
 };
 
 function getOffsetLoc(e) { return new Location(e.offsetX - 1, e.offsetY - 3); }
+
+function locsMatch(loc1, loc2) { return loc1.y == loc2.y && loc1.x == loc2.x; }
 
 function addLocation(e) {
     let loc = getOffsetLoc(e);
@@ -125,11 +213,11 @@ function checkTempMesh(loc) {
     let alreadyPresent = false;
     if (tempMesh.vertices[0]) {
         let loc1 = tempMesh.vertices[0];
-        alreadyPresent = alreadyPresent || (loc.x == loc1.x && loc.y == loc1.y);
+        alreadyPresent = alreadyPresent || locsMatch(loc, loc1);
     }
     if (tempMesh.vertices[1]) {
         let loc2 = tempMesh.vertices[1];
-        alreadyPresent = alreadyPresent || (loc.x == loc2.x && loc.y == loc2.y);
+        alreadyPresent = alreadyPresent || locsMatch(loc, loc2);
     }
     return alreadyPresent;
 }
@@ -177,7 +265,6 @@ function destroyTriMesh(e) {
     let loc = getOffsetLoc(e);
     // see if click is inside triangle
     // if it is, delete that mesh
-    // TODO: have to destroy mesh from graph node map
     graph.meshes.forEach(function(itm, idx) {
         if (contains_point(itm, loc)) {
             graph.removeMeshNeighbors(itm);
@@ -207,9 +294,6 @@ function updateCanvas(e) {
     ctx.clearRect(0, 0, 640, 400);
     // draw image
     if (img) ctx.drawImage(img, 0, 0, 640, 400);
-    // draw locations array
-    ctx.fillStyle = 'red';
-    drawDots(locations);
     // draw meshes
     ctx.fillStyle = "rgba(0, 255, 0, 0.5)";
     graph.meshes.forEach(function(itm) {
@@ -222,7 +306,10 @@ function updateCanvas(e) {
         ctx.lineTo(itm.vertices[2].x, itm.vertices[2].y);
         ctx.fill();
     });
-    // probably draw any locations in tempmesh as green
+    // draw locations array
+    ctx.fillStyle = 'red';
+    drawDots(locations);
+    // draw any locations in tempmesh as green
     ctx.fillStyle = 'lime';
     drawDots(tempMesh.vertices);
 }
@@ -253,29 +340,42 @@ function setDestroyTriangle(e) {
     canvasFunc = destroyTriMesh;
 }
 
+function arrCString(arr) {
+    let str = '{';
+    if (arr[0]) str += arr[0].toString();
+    arr.forEach(function(itm, idx) {
+        if (idx > 0) str += ', ' + itm.toString();
+    });
+    str += '}';
+    return str;
+}
+
+// TODO: add export button that exports data into JSON to save it and import it easily
+
 // exporting graph data:
 // straightforward approach for now - only export Graph struct, save it all as literals
 // don't really need references to individual locations
 // later: figure out logic for how midpoints will be generated
+// idea: create new graph for export with all the midpoints
+//   will have to connect each midpoint to all the other midpoints and vertices in the mesh
+// idea to generate less superfluous midpoints: only generate midpoints that match for more than one mesh
+//   can be implemented simply by adding all midpoints to a map and checking for any doubles
 function exportData() {
     var dataString = new String();
+    var exportGraph = graph.clone();
+    exportGraph.genMidpoints();
     dataString += '#include "graph.h"\n\n';
-    dataString += 'Graph myGraph {{\n';
+    // TODO: add field in html that changes the name of the graph
+    dataString += 'Graph exportedGraph {{\n';
     // location unordered map
-    graph.nodes.forEach(function(nbors, node) {
-        dataString += '{' + node.toString() + ', {';
-        if(nbors[0]) dataString += nbors[0].toString();
-        nbors.forEach(function(itm, idx) {
-            if (idx > 0) dataString += ', ' + itm.toString();
-        });
-        dataString += '}},\n';
-    });
-    dataString += '}, {\n';
+    for (const pair of exportGraph.nodes.locPairs) {
+        dataString += '{' + pair[0].toString() + ', ';
+        dataString += arrCString(pair[1]);
+        dataString += '},\n';
+    }
+    dataString += '},\n';
     // graph mesh array
-    if (graph.meshes[0]) dataString += graph.meshes[0].toString();
-    graph.meshes.forEach(function(itm, idx) {
-        if (idx > 0) dataString += ', ' + itm.toString();
-    });
-    dataString += '}};'
+    dataString += arrCString(exportGraph.meshes);
+    dataString += '\n};'
     window.open(URL.createObjectURL(new Blob([dataString], {type : 'text/plain'})));
 }
