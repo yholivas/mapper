@@ -289,7 +289,7 @@ function drawDots(arr) {
 }
 
 function updateCanvas(e) {
-    canvasFunc(e);
+    if (canvasFunc) canvasFunc(e);
     // clear everything
     ctx.clearRect(0, 0, 640, 400);
     // draw image
@@ -351,6 +351,29 @@ function arrCString(arr) {
 }
 
 // TODO: add export button that exports data into JSON to save it and import it easily
+function exportJSON() {
+    /*
+    var jsonString = JSON.stringify(graph);
+    jsonString += '\n';
+    jsonString += JSON.stringify(locations);
+    */
+    var jsonString = JSON.stringify(locations);
+    window.open(URL.createObjectURL(new Blob([jsonString], {type : 'application/json'})));
+}
+
+var jsonReader = new FileReader();
+
+jsonReader.onload = function(e) {
+    locations = JSON.parse(e.target.result);
+};
+
+function readJSON(input) {
+    if (input.files && input.files[0]) {
+        jsonReader.readAsText(input.files[0]);
+    }
+}
+
+function importJSON() { readJSON(document.querySelector('#import-json')); }
 
 // exporting graph data:
 // straightforward approach for now - only export Graph struct, save it all as literals
