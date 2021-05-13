@@ -352,19 +352,15 @@ function arrCString(arr) {
 
 // TODO: add export button that exports data into JSON to save it and import it easily
 function exportJSON() {
-    /*
-    var jsonString = JSON.stringify(graph);
-    jsonString += '\n';
-    jsonString += JSON.stringify(locations);
-    */
-    var jsonString = JSON.stringify(locations);
+    var jsonString = JSON.stringify({graph, locations});
     window.open(URL.createObjectURL(new Blob([jsonString], {type : 'application/json'})));
 }
 
 var jsonReader = new FileReader();
 
 jsonReader.onload = function(e) {
-    locations = JSON.parse(e.target.result);
+    locations = JSON.parse(e.target.result).locations;
+    graph = JSON.parse(e.target.result).graph;
 };
 
 function readJSON(input) {
