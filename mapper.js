@@ -350,7 +350,6 @@ function arrCString(arr) {
     return str;
 }
 
-// TODO: add export button that exports data into JSON to save it and import it easily
 function exportJSON() {
     var jsonString = JSON.stringify({graph, locations});
     window.open(URL.createObjectURL(new Blob([jsonString], {type : 'application/json'})));
@@ -384,7 +383,6 @@ function exportData() {
     var exportGraph = graph.clone();
     exportGraph.genMidpoints();
     dataString += '#include "graph.h"\n\n';
-    // TODO: add field in html that changes the name of the graph
     dataString += 'Graph exportedGraph {{\n';
     // location unordered map
     for (const pair of exportGraph.nodes.locPairs) {
