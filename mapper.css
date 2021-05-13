@@ -50,6 +50,10 @@ h2 {
   display:inline-block;
 }
 
+.json-btn {
+  display:inline-block;
+}
+
 #selected-btn {
   background-color: #55a;
 }
