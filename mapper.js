@@ -162,6 +162,16 @@ class LocationMap {
         }
         this.locPairs.push([point, val]);
     }
+
+    delete(point) {
+        for (const i = 0; i < this.locPairs.length; i++) {
+            if (locsMatch(this.locPairs[i][0], point)) {
+                this.locPairs.splice(i, 1);
+                return true;
+            }
+        }
+        return false;
+    }
 }
 
 var graph = new Graph();
@@ -205,6 +215,7 @@ function removeLocation(e) {
     let idx = selectLocation(getOffsetLoc(e));
     if (idx != -1) {
         let loc = locations[idx];
+        destroyTriMesh(loc);
         locations.splice(idx, 1);
     }
 }
@@ -261,8 +272,12 @@ function contains_point(mesh, loc) {
     return (area1 + area2 + area3) <= total
 }
 
-function destroyTriMesh(e) {
+function destroyTriangle(e) {
     let loc = getOffsetLoc(e);
+    destroyTriMesh(loc);
+}
+
+function destroyTriMesh(loc) {
     // see if click is inside triangle
     // if it is, delete that mesh
     graph.meshes.forEach(function(itm, idx) {
@@ -337,7 +352,7 @@ function setCreateTriangle(e) {
 
 function setDestroyTriangle(e) {
     selectButton(e.target);
-    canvasFunc = destroyTriMesh;
+    canvasFunc = destroyTriangle;
 }
 
 function arrCString(arr) {
@@ -357,8 +372,12 @@ function exportJSON() {
 
 var jsonReader = new FileReader();
 
+// TODO: copy over data into new class objects to preserve methods
 jsonReader.onload = function(e) {
-    locations = JSON.parse(e.target.result).locations;
+    locations = new Array();
+    for (const loc of JSON.parse(e.target.result).locations) {
+        locations.push(new Location(loc.x, loc.y));
+    }
     graph = JSON.parse(e.target.result).graph;
 };
 
