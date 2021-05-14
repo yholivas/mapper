@@ -325,8 +325,12 @@ function drawDots(arr) {
     });
 }
 
-function updateCanvas(e) {
+function canvasClick(e) {
     if (canvasFunc) canvasFunc(e);
+    updateCanvas();
+}
+
+function updateCanvas() {
     // clear everything
     ctx.clearRect(0, 0, 640, 400);
     // draw image
@@ -394,7 +398,6 @@ function exportJSON() {
 
 var jsonReader = new FileReader();
 
-// TODO: copy over data into new class objects to preserve methods
 jsonReader.onload = function(e) {
     locations = new Array();
     for (const loc of JSON.parse(e.target.result).locations) {
@@ -419,6 +422,7 @@ jsonReader.onload = function(e) {
         }
         graph.meshes.push(newMesh);
     }
+    updateCanvas();
 };
 
 function readJSON(input) {
