@@ -26,6 +26,13 @@ class TriMesh {
         return midpoints;
     }
 
+    has(loc) {
+        for (const vtx of this.vertices) {
+            if (locsMatch(vtx, loc)) { return true; }
+        }
+        return false;
+    }
+
     toString() {
         let str = new String();
         str += '{';
@@ -75,7 +82,7 @@ class Graph {
 
     removeNeighbor(loc, nbor) {
         if (this.nodes.has(loc)) {
-            let idx = this.nodes.get(loc).indexOf(nbor);
+            let idx = indexOfLoc(nbor, this.nodes.get(loc));
             if (idx != -1) {
                 let nbors = this.nodes.get(loc).slice();
                 nbors.splice(idx, 1);
@@ -125,6 +132,18 @@ class Graph {
             }
         }
     }
+
+    deleteMeshesWith(loc) {
+        var remainingMeshes = new Array();
+        for (const mesh of this.meshes) {
+            if (!mesh.has(loc)) {
+                remainingMeshes.push(mesh);
+            } else {
+                this.removeMeshNeighbors(mesh);
+            }
+        }
+        this.meshes = remainingMeshes;
+    }
 }
 
 class LocationMap {
@@ -164,7 +183,7 @@ class LocationMap {
     }
 
     delete(point) {
-        for (const i = 0; i < this.locPairs.length; i++) {
+        for (var i = 0; i < this.locPairs.length; i++) {
             if (locsMatch(this.locPairs[i][0], point)) {
                 this.locPairs.splice(i, 1);
                 return true;
@@ -196,6 +215,13 @@ function getOffsetLoc(e) { return new Location(e.offsetX - 1, e.offsetY - 3); }
 
 function locsMatch(loc1, loc2) { return loc1.y == loc2.y && loc1.x == loc2.x; }
 
+function indexOfLoc(loc, list) {
+    for (var i = 0; i < list.length; i++) {
+        if (locsMatch(loc, list[i])) { return i; }
+    }
+    return -1;
+}
+
 function addLocation(e) {
     let loc = getOffsetLoc(e);
     locations.push(loc);
@@ -215,7 +241,7 @@ function removeLocation(e) {
     let idx = selectLocation(getOffsetLoc(e));
     if (idx != -1) {
         let loc = locations[idx];
-        destroyTriMesh(loc);
+        graph.deleteMeshesWith(loc);
         locations.splice(idx, 1);
     }
 }
@@ -274,10 +300,6 @@ function contains_point(mesh, loc) {
 
 function destroyTriangle(e) {
     let loc = getOffsetLoc(e);
-    destroyTriMesh(loc);
-}
-
-function destroyTriMesh(loc) {
     // see if click is inside triangle
     // if it is, delete that mesh
     graph.meshes.forEach(function(itm, idx) {
@@ -378,7 +400,25 @@ jsonReader.onload = function(e) {
     for (const loc of JSON.parse(e.target.result).locations) {
         locations.push(new Location(loc.x, loc.y));
     }
-    graph = JSON.parse(e.target.result).graph;
+    graph = new Graph();
+    jsonGraph = JSON.parse(e.target.result).graph;
+    // create a new Location with the LocationMap first pair member, copy over second member
+    for (const pair of jsonGraph.nodes.locPairs) {
+        let nbors = new Array();
+        for (const loc of pair[1]) {
+            nbors.push(new Location(loc.x, loc.y));
+        }
+        graph.nodes.locPairs.push([new Location(pair[0].x, pair[0].y), nbors]);
+    }
+
+    for (const mesh of jsonGraph.meshes) {
+        // fill out a new mesh here
+        let newMesh = new TriMesh();
+        for (const vtx of mesh.vertices) {
+            newMesh.vertices.push(new Location(vtx.x, vtx.y));
+        }
+        graph.meshes.push(newMesh);
+    }
 };
 
 function readJSON(input) {
