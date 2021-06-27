@@ -45,7 +45,7 @@ class TriMesh {
         let str = new String();
         str += '{';
         str += arrCString(this.vertices);
-        str += ', {';
+        str += ', ';
         str += arrCString(this.midpoints);
         str += '}\n';
         return str;
@@ -543,7 +543,7 @@ function exportData() {
     dataString += '},\n';
     // graph mesh array
     dataString += arrCString(exportGraph.meshes);
-    dataString += '},\n';
+    dataString += ',\n';
     // boundaries array
     dataString += arrArrCString(exportGraph.boundaries);
     dataString += '\n};'
