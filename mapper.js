@@ -45,8 +45,8 @@ class TriMesh {
         let str = new String();
         str += '{';
         str += arrCString(this.vertices);
-        str += ', ';
-        str += arrCString(this.midpoints);
+        //str += ', ';
+        //str += arrCString(this.midpoints);
         str += '}\n';
         return str;
     }
@@ -56,6 +56,7 @@ class Graph {
     nodes = new LocationMap();
     meshes = new Array();
     boundaries = new Array();
+    inside_edges = new Array();
 
     clone() {
         var cpy = new Graph();
@@ -142,7 +143,7 @@ class Graph {
         }
     }
 
-    genBoundaries() {
+    genEdges() {
         let segmentMap = new SegmentMap();
         for (const mesh of this.meshes) {
             let segments = mesh.genSegments();
@@ -156,6 +157,7 @@ class Graph {
         }
         for (const pair of segmentMap.segmentPairs) {
             if (pair[1] == 1) this.boundaries.push(pair[0]);
+            else this.inside_edges.push(pair[0]);
         }
     }
 
@@ -530,8 +532,8 @@ function importJSON() { readJSON(document.querySelector('#import-json')); }
 function exportData() {
     var dataString = new String();
     var exportGraph = graph.clone();
-    exportGraph.genBoundaries();
-    exportGraph.genMidpoints();
+    exportGraph.genEdges();
+    //exportGraph.genMidpoints();
     dataString += '#include "graph.h"\n\n';
     dataString += 'Graph exportedGraph {{\n';
     // location unordered map
@@ -546,6 +548,9 @@ function exportData() {
     dataString += ',\n';
     // boundaries array
     dataString += arrArrCString(exportGraph.boundaries);
+    dataString += ',\n';
+    // edges array
+    dataString += arrArrCString(exportGraph.inside_edges);
     dataString += '\n};'
     window.open(URL.createObjectURL(new Blob([dataString], {type : 'text/plain'})));
 }
