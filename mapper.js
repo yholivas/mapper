@@ -26,6 +26,14 @@ class TriMesh {
         return midpoints;
     }
 
+    genSegments() {
+        let segments = new Array();
+        segments.push([this.vertices[0], this.vertices[1]]);
+        segments.push([this.vertices[1], this.vertices[2]]);
+        segments.push([this.vertices[0], this.vertices[2]]);
+        return segments;
+    }
+
     has(loc) {
         for (const vtx of this.vertices) {
             if (locsMatch(vtx, loc)) { return true; }
@@ -47,6 +55,7 @@ class TriMesh {
 class Graph {
     nodes = new LocationMap();
     meshes = new Array();
+    boundaries = new Array();
 
     clone() {
         var cpy = new Graph();
@@ -133,6 +142,23 @@ class Graph {
         }
     }
 
+    genBoundaries() {
+        let segmentMap = new SegmentMap();
+        for (const mesh of this.meshes) {
+            let segments = mesh.genSegments();
+            for (const segment of segments) {
+                if (segmentMap.has(segment)) {
+                    segmentMap.set(segment, segmentMap.get(segment) + 1);
+                } else {
+                    segmentMap.set(segment, 1);
+                }
+            }
+        }
+        for (const pair of segmentMap.segmentPairs) {
+            if (pair[1] == 1) this.boundaries.push(pair[0]);
+        }
+    }
+
     deleteMeshesWith(loc) {
         var remainingMeshes = new Array();
         for (const mesh of this.meshes) {
@@ -186,6 +212,56 @@ class LocationMap {
         for (var i = 0; i < this.locPairs.length; i++) {
             if (locsMatch(this.locPairs[i][0], point)) {
                 this.locPairs.splice(i, 1);
+                return true;
+            }
+        }
+        return false;
+    }
+}
+
+// segment:
+//  pair of locations
+//  which is just a length two array of locations
+function segmentsMatch(seg1, seg2) {
+    if ((locsMatch(seg1[0], seg2[0]) && locsMatch(seg1[1], seg2[1]))
+        || (locsMatch(seg1[0], seg2[1]) && locsMatch(seg1[1], seg2[0]))) return true;
+    return false;
+}
+
+class SegmentMap {
+    segmentPairs = new Array();
+
+    has(segment) {
+        var cond = false;
+        this.segmentPairs.forEach(function(pair) {
+            if (segmentsMatch(pair[0], segment)) cond = true;
+        });
+        return cond;
+    }
+
+    get(segment) {
+        var val = undefined;
+        this.segmentPairs.forEach(function(pair) {
+            if (segmentsMatch(pair[0], segment)) val = pair[1];
+        });
+        return val;
+    }
+
+    set(segment, val) {
+        for (const pair of this.segmentPairs) {
+            if (segmentsMatch(pair[0], segment)) {
+                let newPair = [segment, val];
+                this.segmentPairs[this.segmentPairs.indexOf(pair)] = newPair;
+                return
+            }
+        }
+        this.segmentPairs.push([segment, val]);
+    }
+
+    delete(segment) {
+        for (var i = 0; i < this.segmentPairs.length; i++) {
+            if (segmentsMatch(this.segmentPairs[i][0], segment)) {
+                this.segmentPairs.splice(i, 1);
                 return true;
             }
         }
@@ -381,6 +457,16 @@ function setDestroyTriangle(e) {
     canvasFunc = destroyTriangle;
 }
 
+function arrArrCString(arr) {
+    let str = '{';
+    if (arr[0]) str += '{' + arr[0].toString() + '}';
+    arr.forEach(function(itm, idx) {
+        if (idx > 0) str += ', ' + '{' + itm.toString() + '}';
+    });
+    str += '}';
+    return str;
+}
+
 function arrCString(arr) {
     let str = '{';
     if (arr[0]) str += arr[0].toString();
@@ -444,6 +530,7 @@ function importJSON() { readJSON(document.querySelector('#import-json')); }
 function exportData() {
     var dataString = new String();
     var exportGraph = graph.clone();
+    exportGraph.genBoundaries();
     exportGraph.genMidpoints();
     dataString += '#include "graph.h"\n\n';
     dataString += 'Graph exportedGraph {{\n';
@@ -456,6 +543,9 @@ function exportData() {
     dataString += '},\n';
     // graph mesh array
     dataString += arrCString(exportGraph.meshes);
+    dataString += '},\n';
+    // boundaries array
+    dataString += arrArrCString(exportGraph.boundaries);
     dataString += '\n};'
     window.open(URL.createObjectURL(new Blob([dataString], {type : 'text/plain'})));
 }
