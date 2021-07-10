@@ -289,7 +289,15 @@ reader.onload = function(e) {
     };
 };
 
-function getOffsetLoc(e) { return new Location(e.offsetX - 1, e.offsetY - 3); }
+function getOffsetLoc(e) {
+    let x = e.offsetX - 1;
+    let y = e.offsetY - 3;
+    if (x < 0) x = 0;
+    if (y < 0) x = 0;
+    x = x - (x % 2);
+    y = y - (y % 2);
+    return new Location(x, y);
+}
 
 function locsMatch(loc1, loc2) { return loc1.y == loc2.y && loc1.x == loc2.x; }
 
